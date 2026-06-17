@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход / Регистрация</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #message {
+            margin-top: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Вход / Регистрация</h2>
+
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Пароль">
+
+    <button onclick="register()">Зарегистрироваться</button>
+    <button onclick="login()">Войти</button>
+
+    <p id="message"></p>
+
+    <!-- Подключаем Supabase (через CDN) -->
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+
+        // === ТВОИ ДАННЫЕ (только публичные!) ===
+        const SUPABASE_URL = "https://твой_проект.supabase.co";  // замени на свой URL
+        const SUPABASE_KEY = "sb_publishable_QMOedMqn_iuWZoLGsdt5_Q_MBtzNLrA"; // твой публичный ключ
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Регистрация
+        window.register = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+
+            if (!email || !password) {
+                message.textContent = 'Заполни оба поля!';
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({ email, password });
+
+            if (error) {
+                message.textContent = 'Ошибка: ' + error.message;
+            } else {
+                message.textContent = '✅ Регистрация успешна! Проверь почту.';
+            }
+        };
+
+        // Вход
+        window.login = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+
+            if (!email || !password) {
+                message.textContent = 'Заполни оба поля!';
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                message.textContent = '❌ Ошибка: ' + error.message;
+            } else {
+                message.textContent = '✅ Вход выполнен! Привет, ' + data.user.email;
+            }
+        };
+    </script>
+
+</body>
+</html>
