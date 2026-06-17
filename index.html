@@ -31,10 +31,13 @@
     </div>
 
     <div id="auth-section">
-        <h3>Вход (по кодовому слову)</h3>
-        <input type="email" id="auth-email" placeholder="Любой email (не проверяется)">
-        <input type="password" id="auth-password" placeholder="Пароль (введите qwerty-azerty для входа)">
-        <button onclick="magicLogin()">Войти без писем</button>
+        <h3>Вход / Регистрация</h3>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-password" placeholder="Пароль">
+        <input type="password" id="auth-secret" placeholder="Кодовое слово (для входа и регистрации)">
+        <button onclick="register()">Зарегистрироваться</button>
+        <button onclick="login()">Войти</button>
+        <button onclick="secretLogin()">Войти по кодовому слову</button>
         <p id="auth-message"></p>
     </div>
 
@@ -112,9 +115,47 @@
 
         let selectedTariff = null;
 
-        window.magicLogin = async function() {
+        // ========== ОБЫЧНАЯ РЕГИСТРАЦИЯ ==========
+        window.register = async function() {
             const email = document.getElementById('auth-email').value;
-            const secret = document.getElementById('auth-password').value;
+            const pass = document.getElementById('auth-password').value;
+            const secret = document.getElementById('auth-secret').value;
+            const msg = document.getElementById('auth-message');
+
+            if (!email || !pass) {
+                msg.textContent = '❌ Заполните email и пароль!';
+                return;
+            }
+
+            if (secret !== 'qwerty-azerty') {
+                msg.textContent = '❌ Неверное кодовое слово!';
+                return;
+            }
+
+            const { error } = await supabase.auth.signUp({ email, password: pass });
+            msg.textContent = error ? '❌ ' + error.message : '✅ Регистрация успешна! Проверь почту.';
+        };
+
+        // ========== ОБЫЧНЫЙ ВХОД ==========
+        window.login = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            const msg = document.getElementById('auth-message');
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+            if (error) {
+                msg.textContent = '❌ ' + error.message;
+            } else {
+                msg.textContent = '✅ Вход выполнен!';
+                currentUser = data.user;
+                showApp();
+            }
+        };
+
+        // ========== МАГИЧЕСКИЙ ВХОД ПО КОДОВОМУ СЛОВУ ==========
+        window.secretLogin = async function() {
+            const email = document.getElementById('auth-email').value;
+            const secret = document.getElementById('auth-secret').value;
             const msg = document.getElementById('auth-message');
 
             if (secret !== 'qwerty-azerty') {
@@ -122,11 +163,11 @@
                 return;
             }
 
-            // Пробуем войти в существующий аккаунт
+            // Пытаемся войти, если аккаунт уже есть
             const { data, error } = await supabase.auth.signInWithPassword({ email, password: 'qwerty-azerty' });
 
             if (error) {
-                // Если аккаунта нет — создаём его на лету
+                // Если аккаунта нет — создаём
                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
                     email, 
                     password: 'qwerty-azerty' 
@@ -136,7 +177,6 @@
                     msg.textContent = '❌ Ошибка: ' + signUpError.message;
                     return;
                 }
-                
                 currentUser = signUpData.user;
                 msg.textContent = '✅ Аккаунт создан! Вход выполнен.';
             } else {
@@ -159,9 +199,12 @@
             document.getElementById('order-section').classList.remove('hidden');
             renderTariffs();
             loadMyOrders();
-            // Админка доступна всегда, если ты залогинился через кодовое слово
-            document.getElementById('admin-section').classList.remove('hidden');
-            loadAdminOrders();
+
+            // АДМИНКА ОТКРЫВАЕТСЯ ТОЛЬКО НА ТВОЁМ НОВОМ EMAIL
+            if (currentUser?.email === 'zeleninsasha2012@icloud.com') {
+                document.getElementById('admin-section').classList.remove('hidden');
+                loadAdminOrders();
+            }
         }
 
         window.showSection = function(section) {
