@@ -16,7 +16,7 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background: #f2f2f2; }
-        #result, #auth-message, #reset-message { margin-top: 10px; font-weight: bold; }
+        #result, #auth-message { margin-top: 10px; font-weight: bold; }
         .section { margin-top: 20px; }
         .nav-btn { background: transparent; color: #007bff; border: 1px solid #007bff; margin: 5px; }
     </style>
@@ -31,22 +31,11 @@
     </div>
 
     <div id="auth-section">
-        <h3>Вход / Регистрация</h3>
-        <input type="email" id="auth-email" placeholder="Email">
-        <input type="password" id="auth-password" placeholder="Пароль">
-        <input type="text" id="auth-secret" placeholder="Кодовое слово (для регистрации)">
-        <button onclick="register()">Зарегистрироваться</button>
-        <button onclick="login()">Войти</button>
+        <h3>Вход (по кодовому слову)</h3>
+        <input type="email" id="auth-email" placeholder="Любой email (не проверяется)">
+        <input type="password" id="auth-password" placeholder="Пароль (введите qwerty-azerty для входа)">
+        <button onclick="magicLogin()">Войти без писем</button>
         <p id="auth-message"></p>
-        <button class="nav-btn" style="margin-top:15px;" onclick="document.getElementById('reset-section').classList.remove('hidden')">Забыли пароль?</button>
-    </div>
-
-    <div id="reset-section" class="section hidden">
-        <h3>Сброс пароля (по кодовому слову)</h3>
-        <input type="email" id="reset-email" placeholder="Email">
-        <input type="text" id="reset-secret" placeholder="Кодовое слово (qwerty-azerty)">
-        <button onclick="resetPassword()">Отправить ссылку для сброса</button>
-        <p id="reset-message"></p>
     </div>
 
     <div id="order-section" class="section hidden">
@@ -123,10 +112,9 @@
 
         let selectedTariff = null;
 
-        window.register = async function() {
+        window.magicLogin = async function() {
             const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-password').value;
-            const secret = document.getElementById('auth-secret').value;
+            const secret = document.getElementById('auth-password').value;
             const msg = document.getElementById('auth-message');
 
             if (secret !== 'qwerty-azerty') {
@@ -134,36 +122,29 @@
                 return;
             }
 
-            const { error } = await supabase.auth.signUp({ email, password: pass });
-            msg.textContent = error ? '❌ ' + error.message : '✅ Регистрация успешна! Проверь почту.';
-        };
+            // Пробуем войти в существующий аккаунт
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: 'qwerty-azerty' });
 
-        window.login = async function() {
-            const email = document.getElementById('auth-email').value;
-            const pass = document.getElementById('auth-password').value;
-            const msg = document.getElementById('auth-message');
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
             if (error) {
-                msg.textContent = '❌ ' + error.message;
+                // Если аккаунта нет — создаём его на лету
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+                    email, 
+                    password: 'qwerty-azerty' 
+                });
+                
+                if (signUpError) {
+                    msg.textContent = '❌ Ошибка: ' + signUpError.message;
+                    return;
+                }
+                
+                currentUser = signUpData.user;
+                msg.textContent = '✅ Аккаунт создан! Вход выполнен.';
             } else {
-                msg.textContent = '✅ Вход выполнен!';
                 currentUser = data.user;
-                showApp();
-            }
-        };
-
-        window.resetPassword = async function() {
-            const email = document.getElementById('reset-email').value;
-            const secret = document.getElementById('reset-secret').value;
-            const msg = document.getElementById('reset-message');
-
-            if (secret !== 'qwerty-azerty') {
-                msg.textContent = '❌ Неверное кодовое слово для сброса!';
-                return;
+                msg.textContent = '✅ Вход выполнен!';
             }
 
-            const { error } = await supabase.auth.resetPasswordForEmail(email);
-            msg.textContent = error ? '❌ ' + error.message : '✅ Ссылка для сброса отправлена!';
+            showApp();
         };
 
         window.logout = async function() {
@@ -178,10 +159,9 @@
             document.getElementById('order-section').classList.remove('hidden');
             renderTariffs();
             loadMyOrders();
-            if (currentUser?.email === 'admin@admin.com') {
-                document.getElementById('admin-section').classList.remove('hidden');
-                loadAdminOrders();
-            }
+            // Админка доступна всегда, если ты залогинился через кодовое слово
+            document.getElementById('admin-section').classList.remove('hidden');
+            loadAdminOrders();
         }
 
         window.showSection = function(section) {
