@@ -3,95 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход / Регистрация</title>
+    <title>Solar-Delivery</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 400px;
-            margin: 50px auto;
-            text-align: center;
-        }
-        input {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            box-sizing: border-box;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-        }
-        #message {
-            margin-top: 15px;
-            color: #333;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; cursor: pointer; }
+        .card.selected { border: 3px solid #007bff; background: #f0f8ff; }
+        input, select { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
+        button { padding: 12px; width: 100%; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #result { margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <h1>☀️ Solar-Delivery</h1>
+    <p>Выбери тариф и дополнительные услуги</p>
 
-    <h2>Вход / Регистрация</h2>
+    <div id="tariffs"></div>
 
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Пароль">
+    <label>Страховка:</label>
+    <select id="insurance">
+        <option value="none">Без страхования</option>
+        <option value="basic">Начальное (1$ за каждые 5$ заказа)</option>
+        <option value="standard">Базовое (3$ за каждые 10$)</option>
+        <option value="full">Полное (5$ за 10г)</option>
+    </select>
 
-    <button onclick="register()">Зарегистрироваться</button>
-    <button onclick="login()">Войти</button>
+    <label>Способ доставки:</label>
+    <select id="delivery_method">
+        <option value="office">До отделения (бесплатно)</option>
+        <option value="door">До двери (0,49$)</option>
+        <option value="hand">В руки (0,89$)</option>
+        <option value="partner">Через партнера (0,19-2,99$)</option>
+    </select>
 
-    <p id="message"></p>
+    <label>Оформление:</label>
+    <select id="declaration">
+        <option value="schengen">Schengen VISA (1$ без налога)</option>
+        <option value="west_euro">West Euro Visa (0-3$ без налога)</option>
+        <option value="other">Прочие документы (1$ + 15% таможня + 3% касса)</option>
+        <option value="none">Без документов (уточнить у дилера)</option>
+    </select>
 
-    <!-- Подключаем Supabase (через CDN) -->
+    <button onclick="submitOrder()">🚀 Отправить заказ</button>
+    <div id="result"></div>
+
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
-        // === ТВОИ ДАННЫЕ (только публичные!) ===
-        const SUPABASE_URL = "https://твой_проект.supabase.co";  // замени на свой URL
-        const SUPABASE_KEY = "sb_publishable_QMOedMqn_iuWZoLGsdt5_Q_MBtzNLrA"; // твой публичный ключ
+        // ТВОИ КЛЮЧИ
+        const SUPABASE_URL = "https://bstiahjjwvsjgjvfjrdk.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzdGlhaGpqd3ZzamdqdmZqcmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTE1MjAsImV4cCI6MjA5NzI4NzUyMH0.tCpCjq9oYoxakSZuvBVcaYPcD66LyJxDDOyA4KnuPO4";
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Регистрация
-        window.register = async function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const message = document.getElementById('message');
+        // Тарифы
+        const tariffs = [
+            { name: "Super Economy", price: 0.09, days: "до 3 дней" },
+            { name: "Economy", price: 0.29, days: "1-2 дня" },
+            { name: "Standard", price: 0.49, days: "1-2 дня, доп. услуги, базовый трекинг" },
+            { name: "FreeFast", price: 0.69, days: "от 1 дня, без очереди" },
+            { name: "Speedy Delivery", price: 0.99, days: "день в день, до двери, трекинг" },
+            { name: "SuperFast", price: 1.19, days: "день в день, SMS трекинг" },
+            { name: "Express", price: 1.49, days: "за 30 минут, полная декларация" },
+            { name: "Universal", price: 1.99, days: "до 4 дней, до 10 кг" },
+            { name: "International", price: 2.59, days: "до недели, до других отрядов" },
+            { name: "Самовывоз", price: 0, days: "уведомление о прибытии" }
+        ];
 
-            if (!email || !password) {
-                message.textContent = 'Заполни оба поля!';
+        let selectedTariff = null;
+
+        function renderTariffs() {
+            const container = document.getElementById('tariffs');
+            container.innerHTML = '';
+            tariffs.forEach((t) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<strong>${t.name}</strong> — ${t.price}$ (${t.days})`;
+                div.onclick = () => {
+                    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedTariff = t;
+                };
+                container.appendChild(div);
+            });
+        }
+        renderTariffs();
+
+        // Отправка заказа
+        window.submitOrder = async function() {
+            if (!selectedTariff) {
+                document.getElementById('result').textContent = '❌ Сначала выбери тариф!';
                 return;
             }
 
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            const order = {
+                tariff: selectedTariff.name,
+                insurance: document.getElementById('insurance').value,
+                delivery_method: document.getElementById('delivery_method').value,
+                declaration_type: document.getElementById('declaration').value,
+                total_price: selectedTariff.price,
+                status: 'new',
+                user_email: 'test@user.com'
+            };
+
+            const { data, error } = await supabase.from('orders').insert([order]);
 
             if (error) {
-                message.textContent = 'Ошибка: ' + error.message;
+                document.getElementById('result').textContent = '❌ Ошибка: ' + error.message;
             } else {
-                message.textContent = '✅ Регистрация успешна! Проверь почту.';
-            }
-        };
-
-        // Вход
-        window.login = async function() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const message = document.getElementById('message');
-
-            if (!email || !password) {
-                message.textContent = 'Заполни оба поля!';
-                return;
-            }
-
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-            if (error) {
-                message.textContent = '❌ Ошибка: ' + error.message;
-            } else {
-                message.textContent = '✅ Вход выполнен! Привет, ' + data.user.email;
+                document.getElementById('result').textContent = '✅ Заказ оформлен! Номер: ' + data[0].id;
             }
         };
     </script>
-
 </body>
 </html>
