@@ -24,14 +24,12 @@
 <body>
     <h1>☀️ Solar-Delivery</h1>
 
-    <!-- Навигация (только после входа) -->
     <div id="nav" class="hidden">
         <button class="nav-btn" onclick="showSection('order')">Сделать заказ</button>
         <button class="nav-btn" onclick="showSection('myorders')">Мои заказы</button>
         <button class="nav-btn danger" onclick="logout()">Выйти</button>
     </div>
 
-    <!-- Секция входа -->
     <div id="auth-section">
         <h3>Вход / Регистрация</h3>
         <input type="email" id="auth-email" placeholder="Email">
@@ -41,7 +39,6 @@
         <p id="auth-message"></p>
     </div>
 
-    <!-- Секция заказа -->
     <div id="order-section" class="section hidden">
         <h3>Оформить заказ</h3>
         <p>Выбери тариф</p>
@@ -75,7 +72,6 @@
         <div id="result"></div>
     </div>
 
-    <!-- Секция "Мои заказы" -->
     <div id="myorders-section" class="section hidden">
         <h3>Мои заказы</h3>
         <table id="my-orders-table">
@@ -84,7 +80,6 @@
         </table>
     </div>
 
-    <!-- Админ-панель (только для admin@admin.com) -->
     <div id="admin-section" class="section hidden">
         <h3>🛠 Панель администратора</h3>
         <p>Все заказы:</p>
@@ -95,7 +90,8 @@
     </div>
 
     <script type="module">
-        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+        // === ЗАМЕНЕННЫЙ ИМПОРТ (работает 100%) ===
+        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
         const SUPABASE_URL = "https://bstiahjjwvsjgjvfjrdk.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzdGlhaGpqd3ZzamdqdmZqcmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTE1MjAsImV4cCI6MjA5NzI4NzUyMH0.tCpCjq9oYoxakSZuvBVcaYPcD66LyJxDDOyA4KnuPO4";
@@ -103,7 +99,6 @@
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         let currentUser = null;
 
-        // Тарифы
         const tariffs = [
             { name: "Super Economy", price: 0.09, days: "до 3 дней" },
             { name: "Economy", price: 0.29, days: "1-2 дня" },
@@ -119,7 +114,6 @@
 
         let selectedTariff = null;
 
-        // ========== АВТОРИЗАЦИЯ ==========
         window.register = async function() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-password').value;
@@ -148,7 +142,6 @@
             location.reload();
         };
 
-        // ========== ПОКАЗАТЬ ПРИЛОЖЕНИЕ ==========
         function showApp() {
             document.getElementById('auth-section').classList.add('hidden');
             document.getElementById('nav').classList.remove('hidden');
@@ -161,7 +154,6 @@
             }
         }
 
-        // ========== НАВИГАЦИЯ ==========
         window.showSection = function(section) {
             document.querySelectorAll('.section').forEach(el => el.classList.add('hidden'));
             if (section === 'order') document.getElementById('order-section').classList.remove('hidden');
@@ -169,7 +161,6 @@
             else if (section === 'admin') { document.getElementById('admin-section').classList.remove('hidden'); loadAdminOrders(); }
         };
 
-        // ========== ТАРИФЫ ==========
         function renderTariffs() {
             const container = document.getElementById('tariffs');
             container.innerHTML = '';
@@ -186,7 +177,6 @@
             });
         }
 
-        // ========== ОФОРМЛЕНИЕ ЗАКАЗА ==========
         window.submitOrder = async function() {
             if (!selectedTariff) { document.getElementById('result').textContent = '❌ Выбери тариф!'; return; }
             const order = {
@@ -203,7 +193,6 @@
             else { document.getElementById('result').textContent = '✅ Заказ оформлен! Номер: ' + data[0].id; }
         };
 
-        // ========== МОИ ЗАКАЗЫ ==========
         async function loadMyOrders() {
             const tbody = document.querySelector('#my-orders-table tbody');
             tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
@@ -221,7 +210,6 @@
             `).join('');
         }
 
-        // ========== АДМИНКА ==========
         async function loadAdminOrders() {
             const tbody = document.querySelector('#admin-orders-table tbody');
             tbody.innerHTML = '<tr><td colspan="7">Загрузка...</td></tr>';
