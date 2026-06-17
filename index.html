@@ -5,55 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar-Delivery</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 0 20px; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; }
+        .hidden { display: none !important; }
         .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; cursor: pointer; }
         .card.selected { border: 3px solid #007bff; background: #f0f8ff; }
         input, select { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-        button { padding: 12px; width: 100%; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #result { margin-top: 20px; font-weight: bold; }
+        button { padding: 10px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
+        button.danger { background: #dc3545; }
+        button.success { background: #28a745; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+        #result, #auth-message { margin-top: 10px; font-weight: bold; }
+        .section { margin-top: 20px; }
+        .nav-btn { background: transparent; color: #007bff; border: 1px solid #007bff; margin: 5px; }
     </style>
 </head>
 <body>
     <h1>☀️ Solar-Delivery</h1>
-    <p>Выбери тариф и дополнительные услуги</p>
 
-    <div id="tariffs"></div>
+    <!-- Навигация (только после входа) -->
+    <div id="nav" class="hidden">
+        <button class="nav-btn" onclick="showSection('order')">Сделать заказ</button>
+        <button class="nav-btn" onclick="showSection('myorders')">Мои заказы</button>
+        <button class="nav-btn danger" onclick="logout()">Выйти</button>
+    </div>
 
-    <label>Страховка:</label>
-    <select id="insurance">
-        <option value="none">Без страхования</option>
-        <option value="basic">Начальное (1$ за каждые 5$ заказа)</option>
-        <option value="standard">Базовое (3$ за каждые 10$)</option>
-        <option value="full">Полное (5$ за 10г)</option>
-    </select>
+    <!-- Секция входа -->
+    <div id="auth-section">
+        <h3>Вход / Регистрация</h3>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-password" placeholder="Пароль">
+        <button onclick="register()">Зарегистрироваться</button>
+        <button onclick="login()">Войти</button>
+        <p id="auth-message"></p>
+    </div>
 
-    <label>Способ доставки:</label>
-    <select id="delivery_method">
-        <option value="office">До отделения (бесплатно)</option>
-        <option value="door">До двери (0,49$)</option>
-        <option value="hand">В руки (0,89$)</option>
-        <option value="partner">Через партнера (0,19-2,99$)</option>
-    </select>
+    <!-- Секция заказа -->
+    <div id="order-section" class="section hidden">
+        <h3>Оформить заказ</h3>
+        <p>Выбери тариф</p>
+        <div id="tariffs"></div>
 
-    <label>Оформление:</label>
-    <select id="declaration">
-        <option value="schengen">Schengen VISA (1$ без налога)</option>
-        <option value="west_euro">West Euro Visa (0-3$ без налога)</option>
-        <option value="other">Прочие документы (1$ + 15% таможня + 3% касса)</option>
-        <option value="none">Без документов (уточнить у дилера)</option>
-    </select>
+        <label>Страховка:</label>
+        <select id="insurance">
+            <option value="none">Без страхования</option>
+            <option value="basic">Начальное (1$ за каждые 5$ заказа)</option>
+            <option value="standard">Базовое (3$ за каждые 10$)</option>
+            <option value="full">Полное (5$ за 10г)</option>
+        </select>
 
-    <button onclick="submitOrder()">🚀 Отправить заказ</button>
-    <div id="result"></div>
+        <label>Способ доставки:</label>
+        <select id="delivery_method">
+            <option value="office">До отделения (бесплатно)</option>
+            <option value="door">До двери (0,49$)</option>
+            <option value="hand">В руки (0,89$)</option>
+            <option value="partner">Через партнера (0,19-2,99$)</option>
+        </select>
+
+        <label>Оформление:</label>
+        <select id="declaration">
+            <option value="schengen">Schengen VISA (1$ без налога)</option>
+            <option value="west_euro">West Euro Visa (0-3$ без налога)</option>
+            <option value="other">Прочие документы (1$ + 15% таможня + 3% касса)</option>
+            <option value="none">Без документов (уточнить у дилера)</option>
+        </select>
+
+        <button onclick="submitOrder()">🚀 Отправить заказ</button>
+        <div id="result"></div>
+    </div>
+
+    <!-- Секция "Мои заказы" -->
+    <div id="myorders-section" class="section hidden">
+        <h3>Мои заказы</h3>
+        <table id="my-orders-table">
+            <thead><tr><th>№</th><th>Тариф</th><th>Дата</th><th>Статус</th><th>Трек-номер</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Админ-панель (только для admin@admin.com) -->
+    <div id="admin-section" class="section hidden">
+        <h3>🛠 Панель администратора</h3>
+        <p>Все заказы:</p>
+        <table id="admin-orders-table">
+            <thead><tr><th>ID</th><th>Email</th><th>Тариф</th><th>Дата</th><th>Статус</th><th>Трек-номер</th><th>Действия</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 
-        // ТВОИ КЛЮЧИ
         const SUPABASE_URL = "https://bstiahjjwvsjgjvfjrdk.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzdGlhaGpqd3ZzamdqdmZqcmRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTE1MjAsImV4cCI6MjA5NzI4NzUyMH0.tCpCjq9oYoxakSZuvBVcaYPcD66LyJxDDOyA4KnuPO4";
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentUser = null;
 
         // Тарифы
         const tariffs = [
@@ -71,6 +119,57 @@
 
         let selectedTariff = null;
 
+        // ========== АВТОРИЗАЦИЯ ==========
+        window.register = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            const msg = document.getElementById('auth-message');
+            const { error } = await supabase.auth.signUp({ email, password: pass });
+            msg.textContent = error ? '❌ ' + error.message : '✅ Регистрация успешна! Проверь почту.';
+        };
+
+        window.login = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            const msg = document.getElementById('auth-message');
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+            if (error) {
+                msg.textContent = '❌ ' + error.message;
+            } else {
+                msg.textContent = '✅ Вход выполнен!';
+                currentUser = data.user;
+                showApp();
+            }
+        };
+
+        window.logout = async function() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            location.reload();
+        };
+
+        // ========== ПОКАЗАТЬ ПРИЛОЖЕНИЕ ==========
+        function showApp() {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('nav').classList.remove('hidden');
+            document.getElementById('order-section').classList.remove('hidden');
+            renderTariffs();
+            loadMyOrders();
+            if (currentUser?.email === 'admin@admin.com') {
+                document.getElementById('admin-section').classList.remove('hidden');
+                loadAdminOrders();
+            }
+        }
+
+        // ========== НАВИГАЦИЯ ==========
+        window.showSection = function(section) {
+            document.querySelectorAll('.section').forEach(el => el.classList.add('hidden'));
+            if (section === 'order') document.getElementById('order-section').classList.remove('hidden');
+            else if (section === 'myorders') { document.getElementById('myorders-section').classList.remove('hidden'); loadMyOrders(); }
+            else if (section === 'admin') { document.getElementById('admin-section').classList.remove('hidden'); loadAdminOrders(); }
+        };
+
+        // ========== ТАРИФЫ ==========
         function renderTariffs() {
             const container = document.getElementById('tariffs');
             container.innerHTML = '';
@@ -86,15 +185,10 @@
                 container.appendChild(div);
             });
         }
-        renderTariffs();
 
-        // Отправка заказа
+        // ========== ОФОРМЛЕНИЕ ЗАКАЗА ==========
         window.submitOrder = async function() {
-            if (!selectedTariff) {
-                document.getElementById('result').textContent = '❌ Сначала выбери тариф!';
-                return;
-            }
-
+            if (!selectedTariff) { document.getElementById('result').textContent = '❌ Выбери тариф!'; return; }
             const order = {
                 tariff: selectedTariff.name,
                 insurance: document.getElementById('insurance').value,
@@ -102,16 +196,65 @@
                 declaration_type: document.getElementById('declaration').value,
                 total_price: selectedTariff.price,
                 status: 'new',
-                user_email: 'test@user.com'
+                user_email: currentUser?.email || 'test@user.com'
             };
-
             const { data, error } = await supabase.from('orders').insert([order]);
+            if (error) { document.getElementById('result').textContent = '❌ ' + error.message; }
+            else { document.getElementById('result').textContent = '✅ Заказ оформлен! Номер: ' + data[0].id; }
+        };
 
-            if (error) {
-                document.getElementById('result').textContent = '❌ Ошибка: ' + error.message;
-            } else {
-                document.getElementById('result').textContent = '✅ Заказ оформлен! Номер: ' + data[0].id;
-            }
+        // ========== МОИ ЗАКАЗЫ ==========
+        async function loadMyOrders() {
+            const tbody = document.querySelector('#my-orders-table tbody');
+            tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
+            const { data, error } = await supabase.from('orders').select('*').eq('user_email', currentUser?.email);
+            if (error) { tbody.innerHTML = `<tr><td colspan="5">Ошибка: ${error.message}</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="5">У тебя пока нет заказов</td></tr>'; return; }
+            tbody.innerHTML = data.map(o => `
+                <tr>
+                    <td>${o.id}</td>
+                    <td>${o.tariff}</td>
+                    <td>${new Date(o.created_at).toLocaleString()}</td>
+                    <td><strong>${o.status}</strong></td>
+                    <td>${o.tracking_number || '—'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ========== АДМИНКА ==========
+        async function loadAdminOrders() {
+            const tbody = document.querySelector('#admin-orders-table tbody');
+            tbody.innerHTML = '<tr><td colspan="7">Загрузка...</td></tr>';
+            const { data, error } = await supabase.from('orders').select('*');
+            if (error) { tbody.innerHTML = `<tr><td colspan="7">Ошибка: ${error.message}</td></tr>`; return; }
+            tbody.innerHTML = data.map(o => `
+                <tr>
+                    <td>${o.id}</td>
+                    <td>${o.user_email}</td>
+                    <td>${o.tariff}</td>
+                    <td>${new Date(o.created_at).toLocaleString()}</td>
+                    <td><strong>${o.status}</strong></td>
+                    <td>${o.tracking_number || '—'}</td>
+                    <td>
+                        <input id="track-${o.id}" placeholder="Трек-номер" value="${o.tracking_number || ''}" style="width:80px;">
+                        <select id="status-${o.id}">
+                            <option value="new" ${o.status === 'new' ? 'selected' : ''}>Новый</option>
+                            <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>В обработке</option>
+                            <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>Отправлен</option>
+                            <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
+                        </select>
+                        <button class="success" onclick="updateOrder(${o.id})">Обновить</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.updateOrder = async function(id) {
+            const track = document.getElementById(`track-${id}`).value;
+            const status = document.getElementById(`status-${id}`).value;
+            const { error } = await supabase.from('orders').update({ tracking_number: track, status }).eq('id', id);
+            if (error) alert('Ошибка: ' + error.message);
+            else { alert('Обновлено!'); loadAdminOrders(); }
         };
     </script>
 </body>
