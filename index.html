@@ -177,22 +177,39 @@
             });
         }
 
-        window.submitOrder = async function() {
-            if (!selectedTariff) { document.getElementById('result').textContent = '❌ Выбери тариф!'; return; }
-            const order = {
-                tariff: selectedTariff.name,
-                insurance: document.getElementById('insurance').value,
-                delivery_method: document.getElementById('delivery_method').value,
-                declaration_type: document.getElementById('declaration').value,
-                total_price: selectedTariff.price,
-                status: 'new',
-                user_email: currentUser?.email || 'test@user.com'
-            };
-            const { data, error } = await supabase.from('orders').insert([order]);
-            if (error) { document.getElementById('result').textContent = '❌ ' + error.message; }
-            else { document.getElementById('result').textContent = '✅ Заказ оформлен! Номер: ' + data[0].id; }
-        };
+       window.submitOrder = async function() {
+    if (!selectedTariff) {
+        document.getElementById('result').textContent = '❌ Выбери тариф!';
+        return;
+    }
 
+    const order = {
+        tariff: selectedTariff.name,
+        insurance: document.getElementById('insurance').value,
+        delivery_method: document.getElementById('delivery_method').value,
+        declaration_type: document.getElementById('declaration').value,
+        total_price: selectedTariff.price,
+        status: 'new',
+        user_email: currentUser?.email || 'test@user.com'
+    };
+
+    const { data, error } = await supabase.from('orders').insert([order]);
+
+    if (error) {
+        document.getElementById('result').textContent = '❌ Ошибка: ' + error.message;
+    } else {
+        // === УВЕДОМЛЕНИЕ ===
+        const orderId = data[0].id;
+        document.getElementById('result').textContent = `✅ Заказ #${orderId} оформлен!`;
+        
+        // Всплывающее окно (чтобы сразу увидеть)
+        alert(`🎉 Заказ #${orderId} успешно создан! Проверь статус в разделе "Мои заказы".`);
+        
+        // Сброс выбранного тарифа (чтобы не нажать повторно)
+        selectedTariff = null;
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+    }
+};
         async function loadMyOrders() {
             const tbody = document.querySelector('#my-orders-table tbody');
             tbody.innerHTML = '<tr><td colspan="5">Загрузка...</td></tr>';
